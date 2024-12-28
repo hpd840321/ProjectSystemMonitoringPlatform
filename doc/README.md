@@ -1,78 +1,61 @@
-# 项目文档
+# 服务器监控管理平台文档
 
-本项目是基于Python后端和Vue3前端实现的项目状态监控系统。
+## 文档目录
 
-## 系统特点
+### 1. 用户指南
+- [快速入门](guides/getting-started.md)
+- [用户手册](guides/user-manual.md)
+- [常见问题](guides/faq.md)
 
-- 分布式监控：支持多项目、多服务器监控
-- 实时数据：日志和资源使用情况实时采集展示
-- 多级告警：支持邮件、微信等多渠道告警通知
-- 权限管理：多租户数据隔离，细粒度权限控制
-- 可视化大屏：
-  - 响应式布局设计
-  - 丰富的图表组件
-  - 自定义主题配置
-  - 大屏自适应
-  - 动态数据展示
-- 架构设计：
-  - 基于领域驱动设计(DDD)
-  - 清晰的领域边界
-  - 微服务架构支持
-  - 领域事件驱动
-- Agent采集器：
-  - 数据安全：支持数据加密、脱敏处理
-  - 网络适应：支持断线重连、离线缓存
-  - 低资源占用：最小化系统影响
-  - 可靠传输：确保数据完整性
+### 2. 系统设计
+- [系统架构](design/architecture.md)
+- [数据模型](design/data-model.md)
+- [接口设计](design/api-design.md)
 
-## 文档结构
+### 3. 开发文档
+- [开发环境搭建](development/setup.md)
+- [开发规范](development/contributing.md)
+- [API文档](api/README.md)
 
-- `api/` - 后端API接口文档
-- `guides/` - 使用指南和部署文档
-- `development/` - 开发规范和贡献指南
+### 4. 运维指南
+- [部署指南](operations/deployment.md)
+- [监控配置](operations/monitoring.md)
+- [故障处理](operations/troubleshooting.md)
 
-## 技术栈
+## 系统概述
 
-- 后端：Python 3.10、FastAPI、SQLAlchemy
-- 前端：Vue3、TypeScript、Element Plus
-- 数据库：MariaDB 10
-- 其他：Redis、WebSocket、Agent采集器
+本系统是一个基于项目的服务器监控管理平台，提供以下核心功能：
 
-## 如何贡献
+1. 项目管理
+   - 多项目支持
+   - 项目资源配额
+   - 项目成员管理
 
-1. 请确保文档使用Markdown格式
-2. 遵循现有的文件夹结构
-3. 在提交前检查文档格式和拼写 
+2. 服务器监控
+   - 实时状态监控
+   - 资源使用分析
+   - 性能指标趋势
 
-## 系统架构
+3. 告警管理
+   - 自定义告警规则
+   - 多级告警策略
+   - 灵活通知方式
 
-### 整体架构
-- 基于DDD的分层架构
-- 微服务设计理念
-- 事件驱动架构
-- 分布式系统架构
+4. 日志管理
+   - 集中日志采集
+   - 日志实时分析
+   - 历史日志查询
 
-### 核心领域
-1. 监控领域
-   - 日志采集与分析
-   - 资源监控管理
-   - 性能指标分析
+## 技术架构
 
-2. 告警领域
-   - 告警规则引擎
-   - 告警处理流程
-   - 多渠道通知
-
-3. 权限领域
-   - 多租户管理
-   - RBAC权限模型
-   - 数据权限控制
-
-### 技术架构
-- 后端：Python 3.10、FastAPI、SQLAlchemy
-- 前端：Vue3、TypeScript、Element Plus
-- 数据库：MariaDB 10
-- 消息队列：Redis Stream
+- 前端：Vue 3 + TypeScript
+- 后端：Python + FastAPI
+- 数据库：PostgreSQL + TimescaleDB
+- 消息队列：RabbitMQ
 - 缓存：Redis
-- 实时通信：WebSocket
-- 监控采集：Agent 
+
+## 快速链接
+
+- [API文档](api/README.md)
+- [开发指南](development/contributing.md)
+- [部署文档](operations/deployment.md) 
