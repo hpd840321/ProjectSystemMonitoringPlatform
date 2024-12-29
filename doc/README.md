@@ -1,4 +1,5 @@
 # 服务器监控管理平台文档
+Project System Monitoring Platform
 
 ## 文档目录
 
@@ -11,11 +12,13 @@
 - [系统架构](design/architecture.md)
 - [数据模型](design/data-model.md)
 - [接口设计](design/api-design.md)
+- [Agent设计](design/agent-design.md)
 
 ### 3. 开发文档
 - [开发环境搭建](development/setup.md)
 - [开发规范](development/contributing.md)
 - [API文档](api/README.md)
+- [后端实现评估](development/backend-implementation.md)
 
 ### 4. 运维指南
 - [部署指南](operations/deployment.md)
