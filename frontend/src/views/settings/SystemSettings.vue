@@ -1,156 +1,353 @@
 <template>
-  <div class="settings">
-    <div class="header">
-      <h2>系统设置</h2>
+  <div class="system-settings">
+    <a-card title="系统设置">
+      <a-tabs v-model:activeKey="activeTab">
+        <a-tab-pane key="basic" tab="基本设置">
+          <a-form
+            :model="basicSettings"
+            :rules="basicRules"
+            @finish="onBasicFinish"
+            layout="vertical"
+          >
+            <a-form-item label="系统名称" name="system_name">
+              <a-input v-model:value="basicSettings.system_name" />
+            </a-form-item>
+
+            <a-form-item label="系统Logo" name="system_logo">
+              <a-upload
+                v-model:fileList="logoFileList"
+                :customRequest="uploadLogo"
+                :showUploadList="false"
+              >
+                <div class="logo-uploader">
+                  <img v-if="basicSettings.system_logo" :src="basicSettings.system_logo" class="logo-image" />
+                  <div v-else class="logo-placeholder">
+                    <upload-outlined />
+                    <div>点击上传</div>
+                  </div>
     </div>
-    
-    <el-tabs v-model="activeTab">
-      <!-- 基础设置 -->
-      <el-tab-pane label="基础设置" name="basic">
-        <el-form :model="basicForm" label-width="120px">
-          <el-form-item label="系统名称">
-            <el-input v-model="basicForm.systemName" />
-          </el-form-item>
-          <el-form-item label="管理员邮箱">
-            <el-input v-model="basicForm.adminEmail" />
-          </el-form-item>
-          <el-form-item label="数据保留天数">
-            <el-input-number v-model="basicForm.dataRetentionDays" :min="1" :max="365" />
-          </el-form-item>
-        </el-form>
-      </el-tab-pane>
-      
-      <!-- 通知设置 -->
-      <el-tab-pane label="通知设置" name="notification">
-        <el-form :model="notificationForm" label-width="120px">
-          <el-form-item label="SMTP服务器">
-            <el-input v-model="notificationForm.smtpHost" />
-          </el-form-item>
-          <el-form-item label="SMTP端口">
-            <el-input-number v-model="notificationForm.smtpPort" />
-          </el-form-item>
-          <el-form-item label="SMTP用户名">
-            <el-input v-model="notificationForm.smtpUsername" />
-          </el-form-item>
-          <el-form-item label="SMTP密码">
-            <el-input v-model="notificationForm.smtpPassword" type="password" />
-          </el-form-item>
-          <el-form-item label="发件人">
-            <el-input v-model="notificationForm.emailFrom" />
-          </el-form-item>
-          <el-divider />
-          <el-form-item label="Webhook URL">
-            <el-input v-model="notificationForm.webhookUrl" />
-          </el-form-item>
-        </el-form>
-      </el-tab-pane>
-      
-      <!-- 存储设置 -->
-      <el-tab-pane label="存储设置" name="storage">
-        <el-form :model="storageForm" label-width="120px">
-          <el-form-item label="存储类型">
-            <el-select v-model="storageForm.type">
-              <el-option label="本地存储" value="local" />
-              <el-option label="S3存储" value="s3" />
-            </el-select>
-          </el-form-item>
-          
-          <template v-if="storageForm.type === 's3'">
-            <el-form-item label="S3 Endpoint">
-              <el-input v-model="storageForm.s3Endpoint" />
-            </el-form-item>
-            <el-form-item label="Access Key">
-              <el-input v-model="storageForm.s3AccessKey" />
-            </el-form-item>
-            <el-form-item label="Secret Key">
-              <el-input v-model="storageForm.s3SecretKey" type="password" />
-            </el-form-item>
-            <el-form-item label="Bucket">
-              <el-input v-model="storageForm.s3Bucket" />
-            </el-form-item>
-          </template>
-        </el-form>
-      </el-tab-pane>
-    </el-tabs>
-    
-    <div class="actions">
-      <el-button type="primary" @click="saveSettings">保存设置</el-button>
-    </div>
+              </a-upload>
+            </a-form-item>
+
+            <a-form-item label="系统描述" name="system_description">
+              <a-textarea v-model:value="basicSettings.system_description" :rows="4" />
+            </a-form-item>
+
+            <a-form-item>
+              <a-button type="primary" html-type="submit">保存设置</a-button>
+            </a-form-item>
+          </a-form>
+        </a-tab-pane>
+
+        <a-tab-pane key="email" tab="邮件设置">
+          <a-form
+            :model="emailSettings"
+            :rules="emailRules"
+            @finish="onEmailFinish"
+            layout="vertical"
+          >
+            <a-form-item label="SMTP服务器" name="smtp_host">
+              <a-input v-model:value="emailSettings.smtp_host" />
+            </a-form-item>
+
+            <a-form-item label="SMTP端口" name="smtp_port">
+              <a-input-number v-model:value="emailSettings.smtp_port" />
+            </a-form-item>
+
+            <a-form-item label="发件人邮箱" name="smtp_user">
+              <a-input v-model:value="emailSettings.smtp_user" />
+            </a-form-item>
+
+            <a-form-item label="邮箱密码" name="smtp_password">
+              <a-input-password v-model:value="emailSettings.smtp_password" />
+            </a-form-item>
+
+            <a-form-item label="SSL加密" name="smtp_ssl">
+              <a-switch v-model:checked="emailSettings.smtp_ssl" />
+            </a-form-item>
+
+            <a-form-item>
+              <a-space>
+                <a-button type="primary" html-type="submit">保存设置</a-button>
+                <a-button @click="onTestEmail">测试邮件</a-button>
+              </a-space>
+            </a-form-item>
+          </a-form>
+        </a-tab-pane>
+
+        <a-tab-pane key="backup" tab="备份设置">
+          <a-form
+            :model="backupSettings"
+            :rules="backupRules"
+            @finish="onBackupFinish"
+            layout="vertical"
+          >
+            <a-form-item label="自动备份" name="auto_backup">
+              <a-switch v-model:checked="backupSettings.auto_backup" />
+            </a-form-item>
+
+            <a-form-item label="备份周期" name="backup_cycle">
+              <a-select v-model:value="backupSettings.backup_cycle">
+                <a-select-option value="daily">每天</a-select-option>
+                <a-select-option value="weekly">每周</a-select-option>
+                <a-select-option value="monthly">每月</a-select-option>
+              </a-select>
+            </a-form-item>
+
+            <a-form-item label="备份时间" name="backup_time">
+              <a-time-picker v-model:value="backupSettings.backup_time" format="HH:mm" />
+            </a-form-item>
+
+            <a-form-item label="保留天数" name="retention_days">
+              <a-input-number v-model:value="backupSettings.retention_days" :min="1" />
+            </a-form-item>
+
+            <a-form-item>
+              <a-button type="primary" html-type="submit">保存设置</a-button>
+            </a-form-item>
+          </a-form>
+        </a-tab-pane>
+
+        <a-tab-pane key="security" tab="安全设置">
+          <a-form
+            :model="securitySettings"
+            :rules="securityRules"
+            @finish="onSecurityFinish"
+            layout="vertical"
+          >
+            <a-form-item label="密码策略" name="password_policy">
+              <a-checkbox-group v-model:value="securitySettings.password_policy">
+                <a-checkbox value="uppercase">必须包含大写字母</a-checkbox>
+                <a-checkbox value="lowercase">必须包含小写字母</a-checkbox>
+                <a-checkbox value="numbers">必须包含数字</a-checkbox>
+                <a-checkbox value="special">必须包含特殊字符</a-checkbox>
+              </a-checkbox-group>
+            </a-form-item>
+
+            <a-form-item label="最小密码长度" name="min_password_length">
+              <a-input-number v-model:value="securitySettings.min_password_length" :min="6" />
+            </a-form-item>
+
+            <a-form-item label="密码有效期(天)" name="password_expiry_days">
+              <a-input-number v-model:value="securitySettings.password_expiry_days" :min="0" />
+            </a-form-item>
+
+            <a-form-item label="登录失败锁定" name="login_lock">
+              <a-input-group compact>
+                <a-input-number
+                  v-model:value="securitySettings.max_login_attempts"
+                  :min="1"
+                  style="width: 100px"
+                  placeholder="尝试次数"
+                />
+                <a-input-number
+                  v-model:value="securitySettings.lock_duration"
+                  :min="1"
+                  style="width: 100px"
+                  placeholder="锁定时间(分钟)"
+                />
+              </a-input-group>
+            </a-form-item>
+
+            <a-form-item>
+              <a-button type="primary" html-type="submit">保存设置</a-button>
+            </a-form-item>
+          </a-form>
+        </a-tab-pane>
+      </a-tabs>
+    </a-card>
   </div>
 </template>
 
-<script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
-import { useSettingsStore } from '@/stores/settings'
+<script lang="ts">
+import { defineComponent, ref, reactive, onMounted } from 'vue';
+import { message } from 'ant-design-vue';
+import { UploadOutlined } from '@ant-design/icons-vue';
+import { useSettingsStore } from '@/stores/settings';
+import type { UploadProps } from 'ant-design-vue';
 
-const settingsStore = useSettingsStore()
-const activeTab = ref('basic')
+export default defineComponent({
+  name: 'SystemSettings',
 
-// 表单数据
-const basicForm = ref({
-  systemName: '',
-  adminEmail: '',
-  dataRetentionDays: 30
-})
+  components: {
+    UploadOutlined
+  },
 
-const notificationForm = ref({
-  smtpHost: '',
-  smtpPort: 587,
-  smtpUsername: '',
-  smtpPassword: '',
-  emailFrom: '',
-  webhookUrl: ''
-})
+  setup() {
+    const settingsStore = useSettingsStore();
+    const activeTab = ref('basic');
+    const logoFileList = ref([]);
 
-const storageForm = ref({
-  type: 'local',
-  s3Endpoint: '',
-  s3AccessKey: '',
-  s3SecretKey: '',
-  s3Bucket: ''
-})
+    // 基本设置
+    const basicSettings = reactive({
+      system_name: '',
+      system_logo: '',
+      system_description: ''
+    });
 
-// 加载设置
-async function loadSettings() {
-  try {
-    const settings = await settingsStore.getSettings()
-    basicForm.value = { ...settings.basic }
-    notificationForm.value = { ...settings.notification }
-    storageForm.value = { ...settings.storage }
+    const basicRules = {
+      system_name: [{ required: true, message: '请输入系统名称' }]
+    };
+
+    // 邮件设置
+    const emailSettings = reactive({
+      smtp_host: '',
+      smtp_port: 465,
+      smtp_user: '',
+      smtp_password: '',
+      smtp_ssl: true
+    });
+
+    const emailRules = {
+      smtp_host: [{ required: true, message: '请输入SMTP服务器' }],
+      smtp_port: [{ required: true, message: '请输入SMTP端口' }],
+      smtp_user: [{ required: true, message: '请输入发件人邮箱' }]
+    };
+
+    // 备份设置
+    const backupSettings = reactive({
+      auto_backup: false,
+      backup_cycle: 'daily',
+      backup_time: null,
+      retention_days: 7
+    });
+
+    const backupRules = {
+      backup_time: [{ required: true, message: '请选择备份时间' }],
+      retention_days: [{ required: true, message: '请输入保留天数' }]
+    };
+
+    // 安全设置
+    const securitySettings = reactive({
+      password_policy: ['lowercase', 'numbers'],
+      min_password_length: 8,
+      password_expiry_days: 90,
+      max_login_attempts: 5,
+      lock_duration: 30
+    });
+
+    const securityRules = {
+      min_password_length: [{ required: true, message: '请输入最小密码长度' }]
+    };
+
+    onMounted(async () => {
+      await loadSettings();
+    });
+
+    const loadSettings = async () => {
+      try {
+        const settings = await settingsStore.getSettings();
+        Object.assign(basicSettings, settings.basic);
+        Object.assign(emailSettings, settings.email);
+        Object.assign(backupSettings, settings.backup);
+        Object.assign(securitySettings, settings.security);
+      } catch (error) {
+        message.error('加载设置失败');
+      }
+    };
+
+    const uploadLogo: UploadProps['customRequest'] = async (options) => {
+      try {
+        const result = await settingsStore.uploadLogo(options.file);
+        basicSettings.system_logo = result.url;
+        message.success('上传成功');
+      } catch (error) {
+        message.error('上传失败');
+      }
+    };
+
+    const onBasicFinish = async (values: any) => {
+      try {
+        await settingsStore.updateSettings('basic', values);
+        message.success('保存成功');
+      } catch (error) {
+        message.error('保存失败');
+      }
+    };
+
+    const onEmailFinish = async (values: any) => {
+      try {
+        await settingsStore.updateSettings('email', values);
+        message.success('保存成功');
   } catch (error) {
-    ElMessage.error('加载设置失败')
-  }
-}
+        message.error('保存失败');
+      }
+    };
 
-// 保存设置
-async function saveSettings() {
-  try {
-    await settingsStore.updateSettings({
-      basic: basicForm.value,
-      notification: notificationForm.value,
-      storage: storageForm.value
-    })
-    ElMessage.success('保存设置成功')
+    const onBackupFinish = async (values: any) => {
+      try {
+        await settingsStore.updateSettings('backup', values);
+        message.success('保存成功');
+      } catch (error) {
+        message.error('保存失败');
+      }
+    };
+
+    const onSecurityFinish = async (values: any) => {
+      try {
+        await settingsStore.updateSettings('security', values);
+        message.success('保存成功');
   } catch (error) {
-    ElMessage.error('保存设置失败')
-  }
-}
+        message.error('保存失败');
+      }
+    };
 
-onMounted(() => {
-  loadSettings()
-})
+    const onTestEmail = async () => {
+      try {
+        await settingsStore.testEmail(emailSettings);
+        message.success('测试邮件发送成功');
+      } catch (error) {
+        message.error('测试邮件发送失败');
+      }
+    };
+
+    return {
+      activeTab,
+      logoFileList,
+      basicSettings,
+      basicRules,
+      emailSettings,
+      emailRules,
+      backupSettings,
+      backupRules,
+      securitySettings,
+      securityRules,
+      uploadLogo,
+      onBasicFinish,
+      onEmailFinish,
+      onBackupFinish,
+      onSecurityFinish,
+      onTestEmail
+    };
+  }
+});
 </script>
 
 <style scoped>
-.settings {
-  padding: 20px;
+.system-settings {
+  padding: 24px;
+  background: #f0f2f5;
 }
-.header {
-  margin-bottom: 20px;
+
+.logo-uploader {
+  width: 128px;
+  height: 128px;
+  border: 1px dashed #d9d9d9;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
-.actions {
-  margin-top: 20px;
-  text-align: right;
+
+.logo-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.logo-placeholder {
+  text-align: center;
+  color: #999;
 }
 </style> 

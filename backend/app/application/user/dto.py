@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from datetime import datetime
 from app.domain.user.aggregate import User, ProjectMember, UserRole
+from pydantic import BaseModel, EmailStr, constr, validator
+from typing import Optional
 
 @dataclass
 class UserLoginDTO:
@@ -62,3 +64,28 @@ class TokenDTO:
     """令牌DTO"""
     access_token: str
     token_type: str 
+
+class UserRegisterDTO(BaseModel):
+    """用户注册DTO"""
+    username: constr(min_length=3, max_length=20, pattern=r'^[a-zA-Z0-9_-]+$')
+    email: EmailStr
+    password: constr(min_length=8)
+    confirm_password: str
+    tenant_id: Optional[str]
+    captcha: constr(min_length=4, max_length=4)
+
+    @validator('confirm_password')
+    def passwords_match(cls, v, values):
+        if 'password' in values and v != values['password']:
+            raise ValueError('密码不匹配')
+        return v
+
+    @validator('password')
+    def password_strength(cls, v):
+        if not any(c.isupper() for c in v):
+            raise ValueError('密码必须包含大写字母')
+        if not any(c.islower() for c in v):
+            raise ValueError('密码必须包含小写字母')
+        if not any(c.isdigit() for c in v):
+            raise ValueError('密码必须包含数字')
+        return v 

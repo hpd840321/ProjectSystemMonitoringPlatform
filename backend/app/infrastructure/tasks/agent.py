@@ -4,31 +4,34 @@ from typing import List
 from app.domain.agent.service import AgentService
 from app.domain.agent.aggregate import AgentStatus
 from app.infrastructure.config import settings
+import asyncio
 
 logger = logging.getLogger(__name__)
 
-class AgentTasks:
-    """Agent相关后台任务"""
-    
-    def __init__(self, agent_service: AgentService):
-        self.agent_service = agent_service
+class AgentStatusChecker:
+    def __init__(self, service: AgentService):
+        self.service = service
     
     async def check_agent_status(self):
-        """检查Agent状态任务"""
+        """检查Agent状态"""
         try:
-            logger.info("开始检查Agent状态")
-            await self.agent_service.check_agent_status()
-            logger.info("Agent状态检查完成")
+            # 获取所有在线Agent
+            agents = await self.service.agent_repo.list_by_status(AgentStatus.ONLINE)
+            
+            # 检查心跳时间
+            threshold = datetime.now() - timedelta(seconds=settings.AGENT_OFFLINE_THRESHOLD)
+            for agent in agents:
+                if agent.last_heartbeat < threshold:
+                    # 更新为离线状态
+                    agent.status = AgentStatus.OFFLINE
+                    agent.updated_at = datetime.now()
+                    await self.service.agent_repo.save(agent)
+                    logger.warning(f"Agent {agent.id} is offline")
         except Exception as e:
-            logger.error(f"Agent状态检查失败: {str(e)}", exc_info=True)
+            logger.error(f"Failed to check agent status: {str(e)}")
     
-    async def cleanup_old_metrics(self):
-        """清理过期指标数据任务"""
-        try:
-            logger.info("开始清理过期指标数据")
-            retention_days = settings.AGENT_METRICS_RETENTION_DAYS
-            threshold = datetime.now() - timedelta(days=retention_days)
-            await self.agent_service.cleanup_metrics(threshold)
-            logger.info("过期指标数据清理完成")
-        except Exception as e:
-            logger.error(f"指标数据清理失败: {str(e)}", exc_info=True) 
+    async def run(self):
+        """运行状态检查"""
+        while True:
+            await self.check_agent_status()
+            await asyncio.sleep(settings.AGENT_CHECK_INTERVAL) 

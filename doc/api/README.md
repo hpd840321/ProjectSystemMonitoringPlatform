@@ -1,237 +1,213 @@
-# API文档
+# API 文档
 
-此目录包含所有API相关文档。 
+## 概述
 
-## 用户认证
+本文档描述了运维管理平台的REST API接口。所有接口都需要通过认证才能访问。
 
-### 登录
+## 认证
+
+系统使用JWT Token认证机制。客户端需要在请求头中携带Token:
+
+```
+Authorization: Bearer <token>
+```
+
+获取Token:
+```http
 POST /api/v1/auth/login
-```json
+Content-Type: application/json
+
 {
-  "username": "string",
-  "password": "string"
+    "username": "admin",
+    "password": "password"
 }
 ```
 
-### 获取当前用户信息
-GET /api/v1/users/me
+## API 端点
 
-### 修改密码
-PUT /api/v1/users/me/password
-```json
-{
-  "old_password": "string",
-  "new_password": "string"
-}
+### 用户管理
+
+#### 获取用户列表
+```http
+GET /api/v1/users?skip=0&limit=10
 ```
 
-## 项目管理API
+#### 创建用户
+```http
+POST /api/v1/users
+Content-Type: application/json
+
+{
+    "username": "user1",
+    "email": "user1@example.com",
+    "password": "password",
+    "full_name": "User One"
+}
+```
 
 ### 项目管理
+
+#### 获取项目列表
 ```http
-# 创建项目
+GET /api/v1/projects?skip=0&limit=10
+```
+
+#### 创建项目
+```http
 POST /api/v1/projects
 Content-Type: application/json
 
 {
-  "name": "示例项目",
-  "description": "项目描述",
-  "config": {
-    "quota": {
-      "max_servers": 10,
-      "max_agents": 10
-    }
-  }
+    "name": "Project 1",
+    "description": "Project description"
 }
-
-# 获取项目列表
-GET /api/v1/projects
-
-# 获取项目详情
-GET /api/v1/projects/{project_id}
-
-# 更新项目
-PUT /api/v1/projects/{project_id}
-
-# 删除项目
-DELETE /api/v1/projects/{project_id}
 ```
 
 ### 服务器管理
+
+#### 获取服务器列表
 ```http
-# 添加服务器
-POST /api/v1/projects/{project_id}/servers
+GET /api/v1/servers?skip=0&limit=10
+```
+
+#### 添加服务器
+```http
+POST /api/v1/servers
 Content-Type: application/json
 
 {
-  "name": "web-server-1",
-  "host": "192.168.1.100",
-  "type": "web",
-  "description": "Web服务器1",
-  "log_paths": [
-    "/var/log/nginx/access.log",
-    "/var/log/nginx/error.log"
-  ],
-  "metrics_config": {
-    "cpu": {
-      "enabled": true,
-      "interval": 60
-    },
-    "memory": {
-      "enabled": true,
-      "interval": 60
-    }
-  }
-}
-
-# 获取服务器列表
-GET /api/v1/projects/{project_id}/servers
-
-# 获取服务器详情
-GET /api/v1/projects/{project_id}/servers/{server_id}
-
-# 更新服务器配置
-PUT /api/v1/projects/{project_id}/servers/{server_id}
-
-# 删除服务器
-DELETE /api/v1/projects/{project_id}/servers/{server_id}
-
-# 获取服务器指标
-GET /api/v1/projects/{project_id}/servers/{server_id}/metrics
-
-# 获取服务器日志
-GET /api/v1/projects/{project_id}/servers/{server_id}/logs
-``` 
-
-## 项目成员管理
-
-### 添加项目成员
-POST /api/v1/projects/{project_id}/members
-```json
-{
-  "user_id": "string",
-  "role": "admin|member|viewer"
+    "hostname": "server1",
+    "ip_address": "192.168.1.100",
+    "ssh_port": 22
 }
 ```
 
-### 移除项目成员
-DELETE /api/v1/projects/{project_id}/members/{user_id}
+### 监控告警
 
-### 获取项目成员列表
-GET /api/v1/projects/{project_id}/members 
-
-## 认证接口
-
-### 用户注册
-POST /api/v1/auth/register
-```json
-{
-  "username": "string",
-  "email": "string", 
-  "password": "string"
-}
+#### 获取告警列表
+```http
+GET /api/v1/alerts?skip=0&limit=10&status=active
 ```
 
-### 用户登录
-POST /api/v1/auth/login
-```json
+#### 创建告警规则
+```http
+POST /api/v1/alert-rules
+Content-Type: application/json
+
 {
-  "username": "string",
-  "password": "string"
+    "name": "CPU Usage Alert",
+    "metric": "cpu_usage",
+    "condition": ">",
+    "threshold": 90,
+    "severity": "high"
 }
 ```
-
-### 获取当前用户信息
-GET /api/v1/users/me
-Authorization: Bearer <token>
-
-### 修改密码
-PUT /api/v1/users/me/password
-Authorization: Bearer <token>
-```json
-{
-  "old_password": "string",
-  "new_password": "string"
-}
-```
-
-### 添加项目成员
-POST /api/v1/projects/{project_id}/members
-Authorization: Bearer <token>
-```json
-{
-  "user_id": "string",
-  "role": "admin|member|viewer"
-}
-```
-
-### 移除项目成员
-DELETE /api/v1/projects/{project_id}/members/{user_id}
-Authorization: Bearer <token>
-
-### 获取项目成员列表
-GET /api/v1/projects/{project_id}/members
-Authorization: Bearer <token> 
-
-## Agent管理
-
-### 注册Agent
-POST /api/v1/agents/register
-```json
-{
-  "server_id": "string",
-  "hostname": "string",
-  "ip_address": "string",
-  "system_info": {},
-  "version": "string"
-}
-```
-
-### 获取Agent信息
-GET /api/v1/agents/{agent_id}
-
-### 获取服务器Agent列表
-GET /api/v1/servers/{server_id}/agents
-
-### 更新Agent心跳
-POST /api/v1/agents/{agent_id}/heartbeat
-```json
-{
-  "cpu_usage": 0.0,
-  "memory_usage": 0.0,
-  "disk_usage": {},
-  "network_io": {}
-}
-``` 
-
-## 系统管理
 
 ### 备份管理
 
-#### 创建备份
-POST /api/v1/backups
-
-需要管理员权限
-
-响应:
-```json
-"backup_20240315_123456.tar.gz"
+#### 获取备份列表
+```http
+GET /api/v1/backups?skip=0&limit=10
 ```
 
-#### 恢复备份
-POST /api/v1/backups/{backup_file}/restore
+#### 创建备份
+```http
+POST /api/v1/backups
+Content-Type: application/json
 
-需要管理员权限
+{
+    "name": "Backup 1",
+    "type": "full",
+    "description": "Full system backup"
+}
+```
 
-#### 获取备份列表
-GET /api/v1/backups
+### 日志管理
 
-需要管理员权限
+#### 获取日志列表
+```http
+GET /api/v1/logs?skip=0&limit=10&level=error
+```
 
-响应:
+#### 导出日志
+```http
+GET /api/v1/logs/export?start_time=2024-01-01T00:00:00Z&end_time=2024-01-02T00:00:00Z
+```
+
+### 报表管理
+
+#### 获取资源使用报表
+```http
+GET /api/v1/reports/resource-usage?start_time=2024-01-01T00:00:00Z&end_time=2024-01-02T00:00:00Z
+```
+
+#### 导出报表
+```http
+POST /api/v1/reports/export
+Content-Type: application/json
+
+{
+    "report_type": "resource-usage",
+    "start_time": "2024-01-01T00:00:00Z",
+    "end_time": "2024-01-02T00:00:00Z",
+    "format": "pdf",
+    "include_charts": true
+}
+```
+
+### 通知管理
+
+#### 获取通知渠道列表
+```http
+GET /api/v1/notification-channels?skip=0&limit=10
+```
+
+#### 创建通知渠道
+```http
+POST /api/v1/notification-channels
+Content-Type: application/json
+
+{
+    "name": "Email Channel",
+    "type": "email",
+    "config": {
+        "host": "smtp.example.com",
+        "port": 587,
+        "username": "notify@example.com",
+        "password": "password",
+        "from_email": "notify@example.com",
+        "from_name": "System Notification"
+    }
+}
+```
+
+## 错误处理
+
+所有API在发生错误时会返回相应的HTTP状态码和错误信息：
+
 ```json
-[
-  "backup_20240315_123456.tar.gz",
-  "backup_20240314_123456.tar.gz"
-]
+{
+    "detail": "Error message"
+}
+```
+
+常见状态码：
+- 400: 请求参数错误
+- 401: 未认证
+- 403: 权限不足
+- 404: 资源不存在
+- 500: 服务器内部错误
+
+## 分页
+
+支持分页的接口都接受以下查询参数：
+- skip: 跳过的记录数
+- limit: 返回的最大记录数
+
+响应中会包含分页信息：
+```json
+{
+    "total": 100,
+    "items": [...]
+}
 ``` 

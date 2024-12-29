@@ -6,6 +6,42 @@ from app.infrastructure.notification.sender import (
     EmailSender,
     WebhookSender
 )
+from dataclasses import dataclass
+from enum import Enum
+from typing import Dict, Optional
+
+class NotificationType(str, Enum):
+    EMAIL = "email"
+    WEBHOOK = "webhook"
+    SMS = "sms"
+
+@dataclass
+class AlertLevel:
+    id: str
+    name: str
+    description: Optional[str]
+    severity: int
+    color: Optional[str]
+    created_at: datetime
+    updated_at: datetime
+
+@dataclass
+class NotificationChannel:
+    id: str
+    name: str
+    type: NotificationType
+    config: Dict
+    enabled: bool
+    created_at: datetime
+    updated_at: datetime
+
+@dataclass
+class AlertNotification:
+    alert_id: str
+    channel_id: str
+    sent_at: datetime
+    status: str
+    error: Optional[str]
 
 class NotificationService:
     """告警通知服务"""

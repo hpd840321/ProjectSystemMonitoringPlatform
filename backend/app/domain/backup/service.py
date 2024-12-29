@@ -1,115 +1,107 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Optional
 from uuid import uuid4
-from .repository import BackupRepository
-from .aggregate import Backup, BackupRestore, BackupStatus, BackupType
-from app.infrastructure.backup.service import BackupService as BackupInfraService
+from .repository import BackupConfigRepository, BackupJobRepository
+from .aggregate import BackupConfig, BackupJob, BackupType, BackupStatus
+from ...interface.ws.messages import broadcast_backup_status
 
 class BackupService:
-    """备份领域服务"""
-    
     def __init__(
         self,
-        backup_repo: BackupRepository,
-        backup_infra: BackupInfraService
+        config_repo: BackupConfigRepository,
+        job_repo: BackupJobRepository
     ):
-        self.backup_repo = backup_repo
-        self.backup_infra = backup_infra
+        self.config_repo = config_repo
+        self.job_repo = job_repo
     
-    async def create_backup(
+    async def create_config(
         self,
-        user_id: str,
-        backup_type: BackupType = BackupType.FULL
-    ) -> Backup:
-        """创建备份"""
-        # 创建备份记录
-        backup = Backup(
+        server_id: str,
+        name: str,
+        type: str,
+        schedule: str,
+        retention_days: int,
+        target_dir: str
+    ) -> BackupConfig:
+        """创建备份配置"""
+        now = datetime.now()
+        config = BackupConfig(
             id=str(uuid4()),
-            filename="",  # 临时文件名
-            size=0,  # 临时大小
-            created_at=datetime.now(),
-            created_by=user_id,
-            status=BackupStatus.PENDING,
-            error_message=None,
-            backup_type=backup_type,
-            metadata={}
+            server_id=server_id,
+            name=name,
+            type=BackupType(type),
+            schedule=schedule,
+            retention_days=retention_days,
+            target_dir=target_dir,
+            enabled=True,
+            created_at=now,
+            updated_at=now
         )
-        await self.backup_repo.save(backup)
-        
-        try:
-            # 执行备份
-            filename = await self.backup_infra.create_backup()
-            
-            # 更新备份记录
-            backup.filename = filename
-            backup.size = self._get_file_size(filename)
-            backup.status = BackupStatus.SUCCESS
-            await self.backup_repo.save(backup)
-            
-            return backup
-            
-        except Exception as e:
-            # 更新失败状态
-            backup.status = BackupStatus.FAILED
-            backup.error_message = str(e)
-            await self.backup_repo.save(backup)
-            raise
+        await self.config_repo.save(config)
+        return config
     
-    async def restore_backup(
+    async def create_job(
         self,
-        backup_id: str,
-        user_id: str
-    ) -> BackupRestore:
-        """恢复备份"""
-        backup = await self.backup_repo.get_by_id(backup_id)
-        if not backup:
-            raise ValueError("Backup not found")
-            
-        # 创建恢复记录
-        restore = BackupRestore(
+        config_id: str
+    ) -> BackupJob:
+        """创建备份任务"""
+        config = await self.config_repo.get_by_id(config_id)
+        if not config:
+            raise ValueError("Backup config not found")
+        
+        now = datetime.now()
+        job = BackupJob(
             id=str(uuid4()),
-            backup_id=backup_id,
-            restored_at=datetime.now(),
-            restored_by=user_id,
+            config_id=config_id,
+            server_id=config.server_id,
+            type=config.type,
             status=BackupStatus.PENDING,
-            error_message=None
+            start_time=now,
+            end_time=None,
+            size=None,
+            file_path=None,
+            error=None,
+            created_at=now
         )
-        await self.backup_repo.save_restore(restore)
+        await self.job_repo.save(job)
         
-        try:
-            # 执行恢复
-            await self.backup_infra.restore_backup(backup.filename)
-            
-            # 更新恢复记录
-            restore.status = BackupStatus.SUCCESS
-            await self.backup_repo.save_restore(restore)
-            
-            return restore
-            
-        except Exception as e:
-            # 更新失败状态
-            restore.status = BackupStatus.FAILED
-            restore.error_message = str(e)
-            await self.backup_repo.save_restore(restore)
-            raise
+        # 广播任务状态
+        await broadcast_backup_status(job.server_id, job.to_dict())
+        return job
     
-    async def list_backups(
+    async def update_job_status(
         self,
-        limit: int = 100,
-        offset: int = 0
-    ) -> List[Backup]:
-        """获取备份列表"""
-        return await self.backup_repo.list_backups(limit, offset)
+        job_id: str,
+        status: str,
+        **kwargs
+    ) -> BackupJob:
+        """更新任务状态"""
+        job = await self.job_repo.get_by_id(job_id)
+        if not job:
+            raise ValueError("Backup job not found")
+        
+        # 更新状态
+        job.status = BackupStatus(status)
+        job.end_time = kwargs.get("end_time", job.end_time)
+        job.size = kwargs.get("size", job.size)
+        job.file_path = kwargs.get("file_path", job.file_path)
+        job.error = kwargs.get("error", job.error)
+        
+        await self.job_repo.save(job)
+        
+        # 广播状态更新
+        await broadcast_backup_status(job.server_id, job.to_dict())
+        return job
     
-    async def get_backup(self, backup_id: str) -> Optional[Backup]:
-        """获取备份详情"""
-        return await self.backup_repo.get_by_id(backup_id)
-    
-    async def list_restores(self, backup_id: str) -> List[BackupRestore]:
-        """获取恢复记录列表"""
-        return await self.backup_repo.list_restores(backup_id)
-    
-    def _get_file_size(self, filename: str) -> int:
-        """获取文件大小"""
-        import os
-        return os.path.getsize(os.path.join(self.backup_infra.backup_dir, filename)) 
+    async def cleanup_old_backups(self) -> None:
+        """清理过期备份"""
+        configs = await self.config_repo.list_all()
+        for config in configs:
+            if not config.enabled:
+                continue
+            
+            expire_time = datetime.now() - timedelta(days=config.retention_days)
+            await self.job_repo.delete_before(
+                config.id,
+                expire_time
+            ) 

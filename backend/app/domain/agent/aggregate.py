@@ -8,32 +8,44 @@ class AgentStatus(str, Enum):
     OFFLINE = "offline"
     ERROR = "error"
 
-class AgentVersion(str, Enum):
-    V1_0 = "1.0"
-    V1_1 = "1.1"
-    V2_0 = "2.0"
+class UpgradeTaskStatus(str, Enum):
+    PENDING = "pending"
+    RUNNING = "running"
+    SUCCESS = "success"
+    FAILED = "failed"
 
 @dataclass
 class Agent:
     """Agent聚合根"""
     id: str
     server_id: str
-    version: AgentVersion
+    version: str
     status: AgentStatus
-    hostname: str
-    ip_address: str
-    system_info: Dict  # 系统信息
-    config: Dict  # Agent配置
-    last_heartbeat: datetime
+    last_heartbeat: Optional[datetime]
+    config: Dict
     created_at: datetime
     updated_at: datetime
 
 @dataclass
-class AgentMetrics:
-    """Agent指标"""
+class AgentVersion:
+    """Agent版本聚合根"""
+    id: str
+    version: str
+    file_path: str
+    checksum: str
+    description: Optional[str]
+    is_latest: bool
+    created_at: datetime
+    updated_at: datetime
+
+@dataclass
+class UpgradeTask:
+    """升级任务聚合根"""
+    id: str
     agent_id: str
-    cpu_usage: float
-    memory_usage: float
-    disk_usage: Dict[str, float]
-    network_io: Dict[str, int]
-    timestamp: datetime 
+    from_version: str
+    to_version: str
+    status: UpgradeTaskStatus
+    error: Optional[str]
+    created_at: datetime
+    updated_at: datetime 

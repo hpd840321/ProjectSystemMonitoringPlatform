@@ -13,6 +13,12 @@ class AlertStatus(str, Enum):
     FIRING = "firing"
     RESOLVED = "resolved"
 
+class NotificationType(str, Enum):
+    EMAIL = "email"
+    WEBHOOK = "webhook"
+    SMS = "sms"
+    SLACK = "slack"
+
 @dataclass
 class AlertRule:
     """告警规则聚合根"""
@@ -47,10 +53,20 @@ class AlertEvent:
 class NotificationChannel:
     """通知渠道聚合根"""
     id: str
-    project_id: str
     name: str
-    type: str  # email, webhook, slack等
+    type: NotificationType
     config: Dict
     enabled: bool
+    created_at: datetime
+    updated_at: datetime
+
+@dataclass
+class AlertLevel:
+    """告警级别"""
+    id: str
+    name: str
+    description: Optional[str]
+    color: str
+    priority: int
     created_at: datetime
     updated_at: datetime 

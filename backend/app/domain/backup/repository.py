@@ -1,39 +1,70 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional
 from datetime import datetime
-from .aggregate import Backup, BackupRestore
+from .aggregate import BackupConfig, BackupJob
 
-class BackupRepository(ABC):
-    """备份仓储接口"""
+class BackupConfigRepository(ABC):
+    """备份配置仓储接口"""
     
     @abstractmethod
-    async def save(self, backup: Backup) -> None:
-        """保存备份记录"""
+    async def save(self, config: BackupConfig) -> None:
+        """保存备份配置"""
         pass
     
     @abstractmethod
-    async def get_by_id(self, backup_id: str) -> Optional[Backup]:
-        """获取备份记录"""
+    async def get_by_id(self, config_id: str) -> Optional[BackupConfig]:
+        """获取备份配置"""
         pass
     
     @abstractmethod
-    async def list_backups(
+    async def list_by_server(self, server_id: str) -> List[BackupConfig]:
+        """获取服务器的备份配置列表"""
+        pass
+    
+    @abstractmethod
+    async def list_all(self) -> List[BackupConfig]:
+        """获取所有备份配置"""
+        pass
+    
+    @abstractmethod
+    async def delete(self, config_id: str) -> None:
+        """删除备份配置"""
+        pass
+
+class BackupJobRepository(ABC):
+    """备份任务仓储接口"""
+    
+    @abstractmethod
+    async def save(self, job: BackupJob) -> None:
+        """保存备份任务"""
+        pass
+    
+    @abstractmethod
+    async def get_by_id(self, job_id: str) -> Optional[BackupJob]:
+        """获取备份任务"""
+        pass
+    
+    @abstractmethod
+    async def list_by_config(
         self,
+        config_id: str,
         limit: int = 100,
         offset: int = 0
-    ) -> List[Backup]:
-        """获取备份列表"""
+    ) -> List[BackupJob]:
+        """获取备份配置的任务列表"""
         pass
     
     @abstractmethod
-    async def save_restore(self, restore: BackupRestore) -> None:
-        """保存恢复记录"""
-        pass
-    
-    @abstractmethod
-    async def list_restores(
+    async def list_by_server(
         self,
-        backup_id: str
-    ) -> List[BackupRestore]:
-        """获取恢复记录列表"""
+        server_id: str,
+        limit: int = 100,
+        offset: int = 0
+    ) -> List[BackupJob]:
+        """获取服务器的任务列表"""
+        pass
+    
+    @abstractmethod
+    async def delete_before(self, config_id: str, timestamp: datetime) -> None:
+        """删除指定时间之前的任务"""
         pass 

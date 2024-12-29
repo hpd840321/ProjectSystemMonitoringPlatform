@@ -1,65 +1,91 @@
 from abc import ABC, abstractmethod
-from typing import Optional, List, Dict
-from .aggregate import MonitoringTarget, Agent, MetricPoint, MetricType
+from typing import List, Optional
+from datetime import datetime
+from .aggregate import (
+    CustomMetric,
+    MetricValue,
+    MetricAggregation,
+    AggregatedMetric,
+    RetentionPolicy
+)
 
-class MonitoringTargetRepository(ABC):
-    """监控目标仓储接口"""
+class CustomMetricRepository(ABC):
+    @abstractmethod
+    async def save(self, metric: CustomMetric) -> None:
+        pass
     
     @abstractmethod
-    async def get_by_id(self, id: str) -> Optional[MonitoringTarget]:
+    async def get_by_id(self, metric_id: str) -> Optional[CustomMetric]:
         pass
-        
+    
     @abstractmethod
-    async def save(self, target: MonitoringTarget) -> None:
+    async def list_by_project(self, project_id: str) -> List[CustomMetric]:
         pass
-        
+    
     @abstractmethod
-    async def list_by_tenant(self, tenant_id: str) -> List[MonitoringTarget]:
+    async def delete(self, metric_id: str) -> None:
         pass
 
-class AgentRepository(ABC):
-    """Agent仓储接口"""
-    
+class MetricValueRepository(ABC):
     @abstractmethod
-    async def get_by_id(self, id: str) -> Optional[Agent]:
-        pass
-        
-    @abstractmethod
-    async def save(self, agent: Agent) -> None:
-        pass
-        
-    @abstractmethod
-    async def list_by_target(self, target_id: str) -> List[Agent]:
-        pass 
-
-class MetricRepository(ABC):
-    """监控数据仓储接口"""
-    
-    @abstractmethod
-    async def save_metrics(self, points: List[MetricPoint]) -> None:
-        """保存监控数据点"""
+    async def save_values(self, values: List[MetricValue]) -> None:
         pass
     
     @abstractmethod
-    async def query_metrics(
+    async def get_values(
         self,
+        metric_id: str,
         server_id: str,
-        metric_type: MetricType,
         start_time: datetime,
-        end_time: datetime,
-        interval: str = "1m"
-    ) -> List[Dict]:
-        """查询监控数据"""
+        end_time: datetime
+    ) -> List[MetricValue]:
         pass
     
     @abstractmethod
-    async def aggregate_metrics(
+    async def delete_before(self, metric_id: str, timestamp: datetime) -> None:
+        pass
+
+class MetricAggregationRepository(ABC):
+    @abstractmethod
+    async def save(self, aggregation: MetricAggregation) -> None:
+        pass
+    
+    @abstractmethod
+    async def list_by_metric(self, metric_id: str) -> List[MetricAggregation]:
+        pass
+    
+    @abstractmethod
+    async def delete(self, aggregation_id: str) -> None:
+        pass
+
+class AggregatedMetricRepository(ABC):
+    @abstractmethod
+    async def save_values(self, values: List[AggregatedMetric]) -> None:
+        pass
+    
+    @abstractmethod
+    async def get_values(
         self,
-        server_ids: List[str],
-        metric_type: MetricType,
+        aggregation_id: str,
+        server_id: str,
         start_time: datetime,
-        end_time: datetime,
-        group_by: str = "1h"
-    ) -> Dict:
-        """聚合监控数据"""
+        end_time: datetime
+    ) -> List[AggregatedMetric]:
+        pass
+    
+    @abstractmethod
+    async def delete_before(self, aggregation_id: str, timestamp: datetime) -> None:
+        pass
+
+class RetentionPolicyRepository(ABC):
+    @abstractmethod
+    async def save(self, policy: RetentionPolicy) -> None:
+        pass
+    
+    @abstractmethod
+    async def get_by_metric(self, metric_id: str) -> Optional[RetentionPolicy]:
+        pass
+    
+    @abstractmethod
+    async def delete(self, policy_id: str) -> None:
         pass 
